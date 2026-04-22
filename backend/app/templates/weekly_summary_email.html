@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntra.ai Weekly Summary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* Main Content */
+        .content {
+            padding: 30px 20px;
+        }
+        
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 24px;
+            color: #333;
+        }
+        
+        .greeting strong {
+            color: #667eea;
+        }
+        
+        /* Section */
+        .section {
+            margin-bottom: 32px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #667eea;
+            display: inline-block;
+        }
+        
+        .section-empty {
+            color: #999;
+            font-size: 14px;
+            font-style: italic;
+            padding: 20px 0;
+        }
+        
+        /* Meeting Item */
+        .meeting-item {
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+        
+        .meeting-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        
+        .meeting-meta {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .meeting-meta-item {
+            display: inline-block;
+            margin-right: 16px;
+        }
+        
+        .meeting-meta-item strong {
+            color: #667eea;
+        }
+        
+        .meeting-duration {
+            color: #999;
+            font-size: 13px;
+        }
+        
+        /* Action Item */
+        .action-item {
+            background-color: #f9f9f9;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #48bb78;
+            border-radius: 4px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .action-item.overdue {
+            border-left-color: #dc2626;
+            background-color: #fef2f2;
+        }
+        
+        .action-checkbox {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            margin-right: 12px;
+            margin-top: 2px;
+            background-color: #e5e7eb;
+            border: 2px solid #48bb78;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+        }
+        
+        .action-item.completed .action-checkbox {
+            background-color: #48bb78;
+        }
+        
+        .action-item.overdue .action-checkbox {
+            border-color: #dc2626;
+        }
+        
+        .action-content {
+            flex: 1;
+        }
+        
+        .action-text {
+            font-size: 14px;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        
+        .action-item.completed .action-text {
+            color: #999;
+            text-decoration: line-through;
+        }
+        
+        .action-item.completed .action-checkbox {
+            background-color: #48bb78;
+        }
+        
+        .action-meta {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .action-meta-item {
+            display: inline-block;
+            margin-right: 12px;
+        }
+        
+        .action-meta-item.overdue {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-box {
+            background-color: #f9f9f9;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 6px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* CTA Button */
+        .cta-section {
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: transform 0.2s;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .footer-text {
+            font-size: 12px;
+            color: #999;
+            line-height: 1.5;
+        }
+        
+        .footer-links {
+            margin-top: 12px;
+            font-size: 12px;
+        }
+        
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+        
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .email-container {
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 30px 15px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .meeting-meta-item {
+                display: block;
+                margin-right: 0;
+                margin-bottom: 4px;
+            }
+        }
+        
+        /* Divider */
+        .divider {
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+            margin: 24px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Weekly Summary</h1>
+            <p>{{ week_start }} - {{ week_end }}</p>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Greeting -->
+            <div class="greeting">
+                Hello <strong>{{ user_first_name }}</strong>,<br/>
+                Here's your Syntra.ai meeting summary for this week.
+            </div>
+            
+            <!-- Statistics -->
+            {% if stats %}
+            <div class="section">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.total_meetings }}</div>
+                        <div class="stat-label">Meetings</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.total_actions }}</div>
+                        <div class="stat-label">Action Items</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.completed_actions }}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ stats.pending_actions }}</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Meetings Section -->
+            <div class="section">
+                <h2 class="section-title">📹 Meetings</h2>
+                {% if meetings %}
+                    {% for meeting in meetings %}
+                    <div class="meeting-item">
+                        <div class="meeting-title">{{ meeting.title }}</div>
+                        <div class="meeting-meta">
+                            <span class="meeting-meta-item">
+                                <strong>Date:</strong> {{ meeting.date }}
+                            </span>
+                            <span class="meeting-meta-item">
+                                <strong>Duration:</strong> {{ meeting.duration }}
+                            </span>
+                        </div>
+                        <div class="meeting-meta">
+                            <strong>Participants:</strong> {{ meeting.participants }}
+                        </div>
+                        {% if meeting.summary %}
+                        <p style="font-size: 14px; color: #555; margin-top: 8px;">
+                            {{ meeting.summary|truncate(150) }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="section-empty">No meetings this week</div>
+                {% endif %}
+            </div>
+            
+            <hr class="divider">
+            
+            <!-- Open Action Items Section -->
+            <div class="section">
+                <h2 class="section-title">📋 Open Action Items</h2>
+                {% if open_actions %}
+                    {% for action in open_actions %}
+                    <div class="action-item">
+                        <div class="action-checkbox"></div>
+                        <div class="action-content">
+                            <div class="action-text">{{ action.description }}</div>
+                            <div class="action-meta">
+                                {% if action.assignee %}
+                                <span class="action-meta-item">
+                                    <strong>Assigned to:</strong> {{ action.assignee }}
+                                </span>
+                                {% endif %}
+                                {% if action.meeting %}
+                                <span class="action-meta-item">
+                                    <strong>From:</strong> {{ action.meeting }}
+                                </span>
+                                {% endif %}
+                                {% if action.due_date %}
+                                <span class="action-meta-item {% if action.is_overdue %}overdue{% endif %}">
+                                    <strong>Due:</strong> {{ action.due_date }}{% if action.is_overdue %} (OVERDUE){% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="section-empty">No open action items 🎉</div>
+                {% endif %}
+            </div>
+            
+            <!-- Completed Action Items Section -->
+            {% if completed_actions %}
+            <div class="section">
+                <h2 class="section-title">✅ Completed This Week</h2>
+                {% for action in completed_actions %}
+                <div class="action-item completed">
+                    <div class="action-checkbox">✓</div>
+                    <div class="action-content">
+                        <div class="action-text">{{ action.description }}</div>
+                        <div class="action-meta">
+                            {% if action.completed_date %}
+                            <span class="action-meta-item">
+                                <strong>Completed:</strong> {{ action.completed_date }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <hr class="divider">
+            
+            <!-- CTA Section -->
+            <div class="cta-section">
+                <a href="{{ dashboard_url }}" class="cta-button">View Full Dashboard</a>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p class="footer-text">
+                You are receiving this email because you have an active account at Syntra.ai.<br/>
+                This weekly summary is automatically generated every Monday morning.
+            </p>
+            <div class="footer-links">
+                <a href="{{ dashboard_url }}">Dashboard</a>
+                <a href="{{ settings_url }}">Settings</a>
+                <a href="{{ unsubscribe_url }}">Unsubscribe</a>
+            </div>
+            <p class="footer-text" style="margin-top: 12px; font-size: 11px;">
+                © {{ current_year }} Syntra.ai. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
