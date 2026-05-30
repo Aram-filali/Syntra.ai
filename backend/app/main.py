@@ -22,6 +22,7 @@ def _build_cors_origins() -> list[str]:
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:5173",
+        "https://syntra-ai-three.vercel.app",
     ]
     frontend_url = os.getenv("FRONTEND_URL", "").strip()
     extra_origins = [
@@ -52,7 +53,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_build_cors_origins(),
-    allow_origin_regex=os.getenv("CORS_ALLOW_ORIGIN_REGEX") or None,
+    allow_origin_regex=os.getenv("CORS_ALLOW_ORIGIN_REGEX") or r"^https://[a-zA-Z0-9-]+\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
