@@ -6,7 +6,7 @@ Ce document détaille l'architecture technique, le flux de données et la démar
 
 L'intégration repose sur le protocole standard **OAuth 2.0 Server-to-Server** (ou User-Managed App) pour sécuriser l'accès aux données sans jamais stocker les mots de passe Zoom des utilisateurs.
 
-### Diagramme de Séquence Simplifié
+### Diagramme de Séquence
 
 1.  **Initiation (Frontend)** : L'utilisateur clique sur "Sync Zoom". Le client demande l'URL de connexion au Backend.
 2.  **Redirection (Zoom)** : L'utilisateur est redirigé vers `zoom.us/oauth/authorize`. Il valide les permissions.
