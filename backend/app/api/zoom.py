@@ -192,7 +192,7 @@ async def get_my_recordings(
     📹 Récupère les enregistrements Zoom de l'utilisateur connecté
     """
     try:
-        return ZoomService.get_user_recordings(db, current_user)
+        return ZoomService.get_meetings_large_history(db, current_user)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
