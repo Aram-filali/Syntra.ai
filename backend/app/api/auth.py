@@ -51,7 +51,6 @@ class AppleOAuthCallbackRequest(BaseModel):
 @router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -90,13 +89,18 @@ async def register(
         # Créer l'utilisateur (email_verified = False par défaut)
         user = AuthService.create_user(db, user_data)
         
-        # Envoyer l'email de vérification
+        # Envoyer l'email de vérification de manière synchrone.
+        # Si l'envoi échoue, on supprime l'utilisateur pour éviter un compte
+        # non vérifiable enregistré en base.
         token = EmailVerificationService.generate_verification_token(user.email, user.id)
-        background_tasks.add_task(
-            EmailVerificationService.send_verification_email,
-            user,
-            token,
-        )
+        email_sent = EmailVerificationService.send_verification_email(user, token)
+        if not email_sent:
+            db.delete(user)
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Impossible d'envoyer l'email de vérification. Compte non créé."
+            )
         
         return {
             "status": "success",

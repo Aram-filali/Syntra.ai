@@ -1,18 +1,26 @@
 import os
 import smtplib
+import logging
 from typing import List, Dict, Any, Optional
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 class EmailService:
     """Service pour envoyer des emails via SMTP"""
 
     @staticmethod
     def _allow_fake_email() -> bool:
-        environment = os.getenv("ENVIRONMENT", "development").strip().lower()
+        explicit = os.getenv("ALLOW_FAKE_EMAIL", "").strip().lower()
+        if explicit in {"1", "true", "yes", "on"}:
+            return True
+        if explicit in {"0", "false", "no", "off"}:
+            return False
+
+        environment = os.getenv("ENVIRONMENT", "production").strip().lower()
         return environment in {"development", "dev", "local", "test"}
 
     @staticmethod
@@ -90,12 +98,10 @@ class EmailService:
             # En local/dev sans SMTP configure, on simule l'envoi pour ne pas bloquer les flows.
             if not EmailService._is_smtp_configured():
                 if not EmailService._allow_fake_email():
-                    print("SMTP not configured; email not sent")
+                    logger.error("SMTP not configured; email not sent")
                     return False
-                print("📧 DEV MODE - Email not sent (SMTP not configured)")
-                print(f"   To: {recipient_email}")
-                print(f"   Subject: {subject}")
-                print(f"   Content Preview: {html_content[:100]}...")
+                logger.warning("DEV MODE - Email not sent (SMTP not configured)")
+                logger.info("Email recipient=%s subject=%s", recipient_email, subject)
                 return True
 
             EmailService._send_smtp_email(
@@ -103,10 +109,10 @@ class EmailService:
                 subject=subject,
                 html_content=html_content,
             )
-            print(f"Email sent successfully to {recipient_email} via SMTP")
+            logger.info("Email sent successfully via SMTP to %s", recipient_email)
             return True
         except Exception as e:
-            print(f"Error sending verification email via SMTP: {str(e)}")
+            logger.exception("Error sending verification email via SMTP: %s", str(e))
             return False
     
     @staticmethod
@@ -149,7 +155,7 @@ class EmailService:
 
             return success_count == len(recipient_emails)
         except Exception as e:
-            print(f"Error sending meeting share email via SMTP: {str(e)}")
+            logger.exception("Error sending meeting share email via SMTP: %s", str(e))
             return False
     
     @staticmethod
