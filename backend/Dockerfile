@@ -15,9 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Run migrations on container start
-RUN chmod +x /app/entrypoint.sh || true
-
 EXPOSE 8000
 
 # Default command (can be overridden in docker-compose)
