@@ -11,6 +11,11 @@ class EmailService:
     """Service pour envoyer des emails via SMTP"""
 
     @staticmethod
+    def _allow_fake_email() -> bool:
+        environment = os.getenv("ENVIRONMENT", "development").strip().lower()
+        return environment in {"development", "dev", "local", "test"}
+
+    @staticmethod
     def _is_smtp_configured() -> bool:
         smtp_host = os.getenv("SMTP_HOST", "").strip()
         smtp_user = os.getenv("SMTP_USER", "").strip()
@@ -29,6 +34,10 @@ class EmailService:
             and smtp_user not in placeholders
             and smtp_password not in placeholders
         )
+
+    @staticmethod
+    def can_deliver_email() -> bool:
+        return EmailService._is_smtp_configured() or EmailService._allow_fake_email()
 
     @staticmethod
     def _send_smtp_email(
@@ -80,6 +89,9 @@ class EmailService:
         try:
             # En local/dev sans SMTP configure, on simule l'envoi pour ne pas bloquer les flows.
             if not EmailService._is_smtp_configured():
+                if not EmailService._allow_fake_email():
+                    print("SMTP not configured; email not sent")
+                    return False
                 print("📧 DEV MODE - Email not sent (SMTP not configured)")
                 print(f"   To: {recipient_email}")
                 print(f"   Subject: {subject}")

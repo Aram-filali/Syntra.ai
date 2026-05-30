@@ -1,5 +1,5 @@
 # backend/app/api/auth.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
@@ -9,6 +9,7 @@ from ..models.base import get_db
 from ..models.user import User
 from ..schemas.user import UserCreate, UserLogin, UserResponse, Token
 from ..services.auth_service import AuthService
+from ..services.email_service import EmailService
 from ..services.email_verification_service import EmailVerificationService
 from ..services.password_reset_service import PasswordResetService
 from ..utils.dependencies import get_current_user, get_current_active_user
@@ -50,6 +51,7 @@ class AppleOAuthCallbackRequest(BaseModel):
 @router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -77,6 +79,12 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ce nom d'utilisateur est déjà pris"
         )
+
+    if not EmailService.can_deliver_email():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Le service email n'est pas configuré. Réessayez plus tard."
+        )
     
     try:
         # Créer l'utilisateur (email_verified = False par défaut)
@@ -84,7 +92,11 @@ async def register(
         
         # Envoyer l'email de vérification
         token = EmailVerificationService.generate_verification_token(user.email, user.id)
-        EmailVerificationService.send_verification_email(user, token)
+        background_tasks.add_task(
+            EmailVerificationService.send_verification_email,
+            user,
+            token,
+        )
         
         return {
             "status": "success",
@@ -223,6 +235,7 @@ async def verify_email(
 @router.post("/resend-verification-email")
 async def resend_verification_email(
     request: ResendVerificationEmailRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -239,24 +252,42 @@ async def resend_verification_email(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Utilisateur non trouvé"
         )
-    
-    success, message = EmailVerificationService.resend_verification_email(db, user.id)
-    
-    if not success:
+
+    if not EmailService.can_deliver_email():
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Le service email n'est pas configuré. Réessayez plus tard."
         )
+    
+    if user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email déjà vérifié"
+        )
+
+    if not EmailService.can_deliver_email():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Le service email n'est pas configuré. Réessayez plus tard."
+        )
+
+    token = EmailVerificationService.generate_verification_token(user.email, user.id)
+    background_tasks.add_task(
+        EmailVerificationService.send_verification_email,
+        user,
+        token,
+    )
     
     return {
         "status": "success",
-        "message": message
+        "message": "Email de vérification en cours d'envoi"
     }
 
 
 @router.post("/send-verification-email/{user_id}")
 async def send_verification_email(
     user_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -280,17 +311,15 @@ async def send_verification_email(
         )
     
     token = EmailVerificationService.generate_verification_token(user.email, user.id)
-    success = EmailVerificationService.send_verification_email(user, token)
-    
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de l'envoi de l'email"
-        )
+    background_tasks.add_task(
+        EmailVerificationService.send_verification_email,
+        user,
+        token,
+    )
     
     return {
         "status": "success",
-        "message": "Email de vérification envoyé"
+        "message": "Email de vérification en cours d'envoi"
     }
 
 
