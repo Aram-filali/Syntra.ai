@@ -306,7 +306,8 @@ async def forgot_password(
     
     Envoie un email avec un lien de réinitialisation (valide 24h)
     """
-    success, message = PasswordResetService.request_password_reset(db, request.email)
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    success, message = PasswordResetService.request_password_reset(db, request.email, frontend_url)
     
     return {
         "status": "success" if success else "error",

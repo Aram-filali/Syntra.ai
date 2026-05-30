@@ -5,6 +5,7 @@ Service pour la réinitialisation de mot de passe
 
 import secrets
 import hashlib
+import os
 from datetime import datetime, timedelta
 from typing import Tuple
 from sqlalchemy.orm import Session
@@ -18,6 +19,10 @@ class PasswordResetService:
     # Paramètres de token
     TOKEN_LENGTH = 32
     TOKEN_EXPIRY_HOURS = 24  # Les tokens expirent après 24 heures
+
+    @staticmethod
+    def _get_frontend_url() -> str:
+        return os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
     
     @staticmethod
     def generate_reset_token(email: str, user_id: int) -> str:
@@ -31,16 +36,18 @@ class PasswordResetService:
         return f"{random_part}:{hash_part}"
     
     @staticmethod
-    def generate_reset_link(token: str, frontend_url: str = "http://localhost:5173") -> str:
+    def generate_reset_link(token: str, frontend_url: str | None = None) -> str:
         """
         Génère le lien de réinitialisation complet
         
-        Retourne: http://localhost:5173/reset-password?token=XXX
+        Retourne: {frontend_url}/reset-password?token=XXX
         """
+        if not frontend_url:
+            frontend_url = PasswordResetService._get_frontend_url()
         return f"{frontend_url}/reset-password?token={token}"
     
     @staticmethod
-    def send_reset_email(user: User, token: str, frontend_url: str = "http://localhost:5173") -> bool:
+    def send_reset_email(user: User, token: str, frontend_url: str | None = None) -> bool:
         """
         Envoie l'email de réinitialisation via SMTP
         """
@@ -191,13 +198,16 @@ class PasswordResetService:
             return (False, f"Erreur lors de la réinitialisation: {str(e)}")
     
     @staticmethod
-    def request_password_reset(db: Session, email: str, frontend_url: str = "http://localhost:5173") -> Tuple[bool, str]:
+    def request_password_reset(db: Session, email: str, frontend_url: str | None = None) -> Tuple[bool, str]:
         """
         Gère la demande de réinitialisation de mot de passe
         
         Retourne: (success, message)
         """
         try:
+            if not frontend_url:
+                frontend_url = PasswordResetService._get_frontend_url()
+
             from ..models.password_reset_token import PasswordResetToken
             from ..services.auth_service import AuthService
             

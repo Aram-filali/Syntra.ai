@@ -5,6 +5,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from .api import meetings, auth, zoom, webhooks
 from .models.base import engine, Base
 
@@ -15,6 +16,32 @@ from .models import meeting, user
 # In production, prefer running Alembic migrations explicitly instead.
 Base.metadata.create_all(bind=engine)
 
+
+def _build_cors_origins() -> list[str]:
+    default_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+    ]
+    frontend_url = os.getenv("FRONTEND_URL", "").strip()
+    extra_origins = [
+        origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()
+    ]
+
+    origins = default_origins + extra_origins
+    if frontend_url:
+        origins.append(frontend_url)
+
+    unique_origins = []
+    seen = set()
+    for origin in origins:
+        normalized = origin.rstrip("/")
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique_origins.append(normalized)
+
+    return unique_origins
+
 app = FastAPI(
     title="Syntra.ai API",
     description="API pour analyser des réunions avec IA et authentification JWT",
@@ -24,11 +51,8 @@ app = FastAPI(
 # Allow requests from the frontend dev server and any custom frontend port
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:5173",
-    ],
+    allow_origins=_build_cors_origins(),
+    allow_origin_regex=os.getenv("CORS_ALLOW_ORIGIN_REGEX") or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional
 import os
 import shutil
 import tempfile
+from urllib.parse import urlencode
 
 from ..models.base import get_db, SessionLocal
 from ..models.user import User
@@ -105,7 +106,10 @@ async def zoom_callback(code: str, state: Optional[str] = None, db: Session = De
         db.commit()
         
         # Redirection vers le dashboard frontend (ou une page de succès)
-        return RedirectResponse(url="http://localhost:3001/dashboard?zoom=connected")
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        redirect_path = os.getenv("ZOOM_CONNECTED_REDIRECT_PATH", "/dashboard")
+        query = urlencode({"zoom": "connected"})
+        return RedirectResponse(url=f"{frontend_url}{redirect_path}?{query}")
         
     except Exception as e:
         raise HTTPException(

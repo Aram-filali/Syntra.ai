@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
-const API_URL = 'http://localhost:8000/api/auth';
+const DEFAULT_API_BASE_URL = import.meta.env.PROD
+    ? 'https://syntraai-production.up.railway.app/api'
+    : 'http://localhost:8000/api';
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
+const API_URL = `${API_BASE_URL}/auth`;
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);

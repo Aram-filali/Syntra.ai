@@ -171,6 +171,9 @@ class EmailService:
                 """
             
             actions_html += "</ul></div>"
+
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        meeting_url = f"{frontend_url}/meetings/{meeting_id}"
         
         html = f"""
         <!DOCTYPE html>
@@ -207,7 +210,7 @@ class EmailService:
                     
                     {actions_html}
                     
-                    <a href="http://localhost:3000/meetings/{meeting_id}" class="btn">
+                    <a href="{meeting_url}" class="btn">
                         Voir les détails complets →
                     </a>
                     

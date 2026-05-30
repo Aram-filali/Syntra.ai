@@ -65,6 +65,11 @@ meeting-intelligence/
 
 ## ⚙️ Installation & Setup
 
+## ☁️ Deployment (Railway + Vercel)
+
+Le guide complet de déploiement production est disponible ici :
+- `docs/DEPLOY_RAILWAY_VERCEL.md`
+
 ### Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.

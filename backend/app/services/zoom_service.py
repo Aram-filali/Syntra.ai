@@ -13,16 +13,20 @@ load_dotenv()
 class ZoomService:
     CLIENT_ID = os.getenv("ZOOM_CLIENT_ID")
     CLIENT_SECRET = os.getenv("ZOOM_CLIENT_SECRET")
-    REDIRECT_URI = os.getenv("ZOOM_REDIRECT_URI", "http://localhost:8000/api/zoom/callback")
     
     ZOOM_AUTH_URL = "https://zoom.us/oauth/authorize"
     ZOOM_TOKEN_URL = "https://zoom.us/oauth/token"
     ZOOM_API_BASE_URL = "https://api.zoom.us/v2"
 
     @classmethod
+    def _get_redirect_uri(cls) -> str:
+        return os.getenv("ZOOM_REDIRECT_URI", "http://localhost:8000/api/zoom/callback")
+
+    @classmethod
     def get_auth_url(cls, state: Optional[str] = None) -> str:
         """Génère l'URL d'autorisation Zoom"""
-        encoded_redirect = urllib.parse.quote(cls.REDIRECT_URI, safe='')
+        redirect_uri = cls._get_redirect_uri()
+        encoded_redirect = urllib.parse.quote(redirect_uri, safe='')
         url = f"{cls.ZOOM_AUTH_URL}?response_type=code&client_id={cls.CLIENT_ID}&redirect_uri={encoded_redirect}"
         if state:
             url += f"&state={state}"
@@ -41,7 +45,7 @@ class ZoomService:
         data = {
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": cls.REDIRECT_URI
+            "redirect_uri": cls._get_redirect_uri()
         }
         
         response = requests.post(cls.ZOOM_TOKEN_URL, headers=headers, data=data)
