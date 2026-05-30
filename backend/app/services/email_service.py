@@ -1,6 +1,7 @@
 import os
 import smtplib
 import logging
+import requests as http_requests
 from typing import List, Dict, Any, Optional
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -10,7 +11,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 class EmailService:
-    """Service pour envoyer des emails via SMTP"""
+    """Service pour envoyer des emails via l'API Brevo ou SMTP"""
 
     @staticmethod
     def _allow_fake_email() -> bool:
@@ -22,6 +23,11 @@ class EmailService:
 
         environment = os.getenv("ENVIRONMENT", "production").strip().lower()
         return environment in {"development", "dev", "local", "test"}
+
+    @staticmethod
+    def _is_brevo_api_configured() -> bool:
+        api_key = os.getenv("BREVO_API_KEY", "").strip()
+        return bool(api_key) and api_key not in {"", "...", "your-brevo-api-key"}
 
     @staticmethod
     def _is_smtp_configured() -> bool:
@@ -45,7 +51,47 @@ class EmailService:
 
     @staticmethod
     def can_deliver_email() -> bool:
-        return EmailService._is_smtp_configured() or EmailService._allow_fake_email()
+        return (
+            EmailService._is_brevo_api_configured()
+            or EmailService._is_smtp_configured()
+            or EmailService._allow_fake_email()
+        )
+
+    @staticmethod
+    def _send_brevo_api_email(
+        recipient_email: str,
+        subject: str,
+        html_content: str,
+    ) -> bool:
+        api_key = os.getenv("BREVO_API_KEY", "")
+        from_email = os.getenv("FROM_EMAIL", "noreply@syntra.ai")
+        from_name = os.getenv("FROM_NAME", "Syntra.ai")
+
+        payload = {
+            "sender": {"email": from_email, "name": from_name},
+            "to": [{"email": recipient_email}],
+            "subject": subject,
+            "htmlContent": html_content,
+        }
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "api-key": api_key,
+        }
+        response = http_requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=payload,
+            headers=headers,
+            timeout=15,
+        )
+        if response.status_code not in (200, 201):
+            logger.error(
+                "Brevo API error: status=%s body=%s",
+                response.status_code,
+                response.text[:500],
+            )
+            return False
+        return True
 
     @staticmethod
     def _send_smtp_email(
@@ -95,24 +141,39 @@ class EmailService:
             True si succès, False sinon
         """
         try:
-            # En local/dev sans SMTP configure, on simule l'envoi pour ne pas bloquer les flows.
-            if not EmailService._is_smtp_configured():
-                if not EmailService._allow_fake_email():
-                    logger.error("SMTP not configured; email not sent")
-                    return False
-                logger.warning("DEV MODE - Email not sent (SMTP not configured)")
+            # Priorité 1 : API HTTP Brevo (pas de restriction de port Railway)
+            if EmailService._is_brevo_api_configured():
+                result = EmailService._send_brevo_api_email(
+                    recipient_email=recipient_email,
+                    subject=subject,
+                    html_content=html_content,
+                )
+                if result:
+                    logger.info("Email sent via Brevo API to %s", recipient_email)
+                else:
+                    logger.error("Brevo API failed for %s", recipient_email)
+                return result
+
+            # Priorité 2 : SMTP direct (peut être bloqué sur Railway)
+            if EmailService._is_smtp_configured():
+                EmailService._send_smtp_email(
+                    recipient_email=recipient_email,
+                    subject=subject,
+                    html_content=html_content,
+                )
+                logger.info("Email sent via SMTP to %s", recipient_email)
+                return True
+
+            # Priorité 3 : Dev/test mode
+            if EmailService._allow_fake_email():
+                logger.warning("DEV MODE - Email not sent (no transport configured)")
                 logger.info("Email recipient=%s subject=%s", recipient_email, subject)
                 return True
 
-            EmailService._send_smtp_email(
-                recipient_email=recipient_email,
-                subject=subject,
-                html_content=html_content,
-            )
-            logger.info("Email sent successfully via SMTP to %s", recipient_email)
-            return True
+            logger.error("No email transport configured (BREVO_API_KEY, SMTP, or ALLOW_FAKE_EMAIL)")
+            return False
         except Exception as e:
-            logger.exception("Error sending verification email via SMTP: %s", str(e))
+            logger.exception("Error sending email to %s: %s", recipient_email, str(e))
             return False
     
     @staticmethod
