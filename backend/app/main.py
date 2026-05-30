@@ -12,9 +12,10 @@ from .models.base import engine, Base
 # All models must be imported before create_all() so SQLAlchemy can discover them
 from .models import meeting, user
 
-# Create tables on startup if they don't exist yet.
-# In production, prefer running Alembic migrations explicitly instead.
-Base.metadata.create_all(bind=engine)
+# Do not create tables by default at startup in production.
+# This can block boot/healthchecks if DB is temporarily unavailable.
+if os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true":
+    Base.metadata.create_all(bind=engine)
 
 
 def _build_cors_origins() -> list[str]:
